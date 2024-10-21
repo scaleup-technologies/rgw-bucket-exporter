@@ -1,9 +1,9 @@
-import time
 import os
 import logging
-from prometheus_client import start_http_server, Gauge
+from prometheus_client import Gauge, generate_latest
 from requests_aws4auth import AWS4Auth
 import requests
+from flask import Flask, Response
 
 class RGWBucketExporter:
     def __init__(self):
@@ -46,24 +46,24 @@ class RGWBucketExporter:
             except KeyError as e:
                 logging.warning("Missing expected data in response: %s", e)
 
-    def start_loop(self):
-        while True:
-            data = self.fetch_bucket_data()
-            if data:
-                self.update_metrics(data)
-            else:
-                logging.warning("No data to process.")
-            time.sleep(60)
+    def collect_metrics(self):
+        data = self.fetch_bucket_data()
+        if data:
+            self.update_metrics(data)
+        else:
+            logging.warning("No data to process.")
 
+rgw_bucket_exporter = RGWBucketExporter()
 
-def main():
-    rgw_bucket_exporter = RGWBucketExporter()
+app = Flask(__name__)
 
-    start_http_server(9142)
-    logging.info("Started HTTP server on port 9142")
-
-    rgw_bucket_exporter.start_loop()
+@app.route('/metrics')
+def metrics():
+    rgw_bucket_exporter.collect_metrics()
+    return Response(generate_latest(), mimetype='text/plain')
 
 
 if __name__ == "__main__":
-    main()
+    app.run(host='0.0.0.0', port=9142)
+    logging.info("Started HTTP server on port 9142")
+
