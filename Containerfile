@@ -8,4 +8,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY main.py .
 
-CMD ["python", "main.py"]
+ENV FLASK_APP=main.py
+
+CMD ["gunicorn", "--bind", "0.0.0.0:9142", "main:app"]
