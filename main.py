@@ -5,6 +5,7 @@ from requests_aws4auth import AWS4Auth
 import requests
 from flask import Flask, Response
 import math
+from urllib.parse import urlparse
 
 class RGWBucketExporter:
     def __init__(self):
@@ -28,7 +29,8 @@ class RGWBucketExporter:
             resp = requests.get(
                 url=f"{self.admin_url}/bucket?stats=true&format=json",
                 auth=self.auth,
-                verify=self.verify
+                verify=self.verify,
+                headers={'Host': urlparse(self.admin_url).hostname},
             )
             resp.raise_for_status()
             logging.info("Successfully fetched bucket data from: %s", self.admin_url)
